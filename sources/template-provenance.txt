@@ -1,0 +1,19 @@
+URL: https://github.com/Yandex-Practicum/higher-front-back-dev-tamagochi
+Commit: 9073793cdb767ef161345d51837b6fe00b2963f2
+Branch: main
+Retrieved: 2026-10-04 (Asia/Yekaterinburg)
+
+В official-template/game/ без изменений сохранены clicker.py, game.py
+и tamagochi.py для проверки контрактов в tests/test_contracts.py.
+В репозитории этого коммита нет tests/, requirements.txt и настроек
+pytest, Flake8 или Ruff; CI вызывает стандартный ruff check ./game.
+Тесты и настройки корневого проекта добавлены локально.
+
+README шаблона описывает устаревшие сигнатуры click() и buy_food(food, price).
+Python-файлы и локальный HTML задают work() и buy_food() без аргументов.
+В реализации использованы контракты Python-файлов, как требует запрос.
+В HTML описание status оформлено как метод, но шаблон задаёт @property;
+реализация сохраняет свойство.
+Два обязательных имени исключений, TamagochiIsGone и NotEnoughMoney,
+перечислены в ignore-names для дополнительной проверки pep8-naming.
+Остальные правила линтеров действуют без исключений.
