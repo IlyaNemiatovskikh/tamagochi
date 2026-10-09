@@ -1,39 +1,76 @@
-"""Сверка имён классов, методов, аргументов и декораторов с шаблоном."""
+"""Проверка имён классов, методов, аргументов и декораторов."""
 
 import ast
 from pathlib import Path
 
 import pytest
 
+CONTRACTS = {
+    'clicker': (
+        'AbstractClicker',
+        {
+            '__init__': (('self',), ('abstractmethod',)),
+            'click': (('self',), ('abstractmethod',)),
+            'income_per_click': (('self',), ('property', 'abstractmethod')),
+        },
+    ),
+    'game': (
+        'AbstractGame',
+        {
+            '__init__': (
+                ('self', 'tamagochi', 'clicker', 'all_food', 'all_medicine'),
+                ('abstractmethod',),
+            ),
+            'work': (('self',), ('abstractmethod',)),
+            'buy_food': (('self',), ('abstractmethod',)),
+            'buy_medicine': (('self',), ('abstractmethod',)),
+            'feed_tamagochi': (('self',), ('abstractmethod',)),
+            'heal_tamagochi': (('self',), ('abstractmethod',)),
+            'rest_tamagochi': (('self',), ('abstractmethod',)),
+            'play_with_tamagochi': (('self',), ('abstractmethod',)),
+            'get_status': (('self',), ('abstractmethod',)),
+            'food': (('self',), ('property', 'abstractmethod')),
+            'medicine': (('self',), ('property', 'abstractmethod')),
+        },
+    ),
+    'tamagochi': (
+        'AbstractTamagochi',
+        {
+            'feed': (('self', 'food'), ('abstractmethod',)),
+            'play': (('self',), ('abstractmethod',)),
+            'rest': (('self',), ('abstractmethod',)),
+            'heal': (('self', 'medicine'), ('abstractmethod',)),
+            'status': (('self',), ('property', 'abstractmethod')),
+            'is_alive': (('self',), ('abstractmethod',)),
+            'is_sick': (('self',), ('abstractmethod',)),
+            'update': (('self',), ('abstractmethod',)),
+        },
+    ),
+}
 
-@pytest.mark.parametrize('module', ['clicker', 'game', 'tamagochi'])
-def test_abstract_contract_matches_official_template(module: str) -> None:
+
+@pytest.mark.parametrize('module', CONTRACTS)
+def test_abstract_contract(module: str) -> None:
     root = Path(__file__).resolve().parents[1]
-    original = ast.parse(
-        (root / 'sources' / 'official-template' / 'game'
-         / f'{module}.py').read_text(),
-    )
     current = ast.parse((root / 'game' / f'{module}.py').read_text())
-    original_class = next(
-        node for node in original.body if isinstance(node, ast.ClassDef)
-    )
+    class_name, expected_methods = CONTRACTS[module]
     current_class = next(
         node for node in current.body if isinstance(node, ast.ClassDef)
     )
-    assert original_class.name == current_class.name
+    assert current_class.name == class_name
     methods = {
-        node.name: node for node in current_class.body
+        node.name: node
+        for node in current_class.body
         if isinstance(node, ast.FunctionDef)
     }
-    # Проверяем методы шаблона; дополнительные методы допустимы.
-    for method in original_class.body:
-        if not isinstance(method, ast.FunctionDef):
-            continue
-        replacement = methods[method.name]
-        assert [argument.arg for argument in replacement.args.args] == [
-            argument.arg for argument in method.args.args
-        ]
-        assert [ast.dump(decorator) for decorator
-                in replacement.decorator_list] == [
-            ast.dump(decorator) for decorator in method.decorator_list
-        ]
+    for name, (arguments, decorators) in expected_methods.items():
+        method = methods[name]
+        assert (
+            tuple(argument.arg for argument in method.args.args) == arguments
+        )
+        assert (
+            tuple(
+                ast.unparse(decorator) for decorator in method.decorator_list
+            )
+            == decorators
+        )
